@@ -23,6 +23,12 @@ RUN groupadd -r zookeeper && \
         '*/conf/*' '*/lib/*' '*/bin/*' '*/zookeeper-*.jar' && \
     rm -rf zookeeper-3.4.6.tar.gz
 
+#Install confd
+RUN mkdir -p /opt/confd/bin && \
+    mkdir -p /opt/confd/conf.d && \
+    mkdir -p /opt/confd/templates && \
+    wget -O /opt/confd/bin/confd \
+        https://github.com/kelseyhightower/confd/releases/download/v0.7.1/confd-0.7.1-linux-amd64
 
 EXPOSE 2181 2888 3888
 
