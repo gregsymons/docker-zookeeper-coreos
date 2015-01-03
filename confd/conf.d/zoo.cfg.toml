@@ -1,0 +1,10 @@
+[template]
+Src = "zoo.cfg.tmpl"
+Dest = "/var/lib/zookeeper/zoo.cfg"
+Uid = 0
+Gid = 0
+Mode = "0644"
+Keys = [
+  "/servers",
+  "/config"
+]

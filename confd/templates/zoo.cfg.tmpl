@@ -1,0 +1,20 @@
+# zoo.cfg
+dataDir=/var/lib/zookeeper
+clientPort=2181
+{{ if exists "/config/* }}
+  {{ range gets "/config" }}
+
+{{ .Key }}={{ .Value }}
+
+  {{ end }}
+{{ end }}
+
+{{ range lsdir "/servers" }}
+  {{ $server := . }}
+  {{ $host := getv "/servers/$server/host" }}
+  {{ $peerPort := getv "/servers/$server/peerPort" }}
+  {{ $leaderPort := getv "/servers/$server/leaderPort" }}
+
+server.{{ $server }}={{ $host }}:{{ $peerPort }}:{{ $leaderPort }} 
+
+{{ end }}

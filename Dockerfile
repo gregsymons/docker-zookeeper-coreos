@@ -1,12 +1,23 @@
 FROM debian:jessie
 MAINTAINER Greg Symons <gsymons@gsconsulting.biz>
 
+EXPOSE 2181 2888 3888
 
+ENV ZOO_LOG4J_PROP INFO,CONSOLE
+
+ENV CONFD_EXTRA_ARGS="" \
+    ETCD_NODES=http://127.0.0.1:4001 \
+    ETCD_PREFIX=/core-services/zookeeper \
+    ZK_INIT=true
 
 #Install prerequisites
-RUN apt-get update && apt-get install -y \
-    openjdk-7-jre-headless \
-    wget
+RUN apt-get update && \
+    apt-get install -y \
+        openjdk-7-jre-headless \
+        supervisor \
+        wget && \
+    apt-get clean
+
 
 #Install zookeeper
 RUN groupadd -r zookeeper && \
@@ -21,15 +32,34 @@ RUN groupadd -r zookeeper && \
         -xvzf zookeeper-3.4.6.tar.gz \
         --wildcards \
         '*/conf/*' '*/lib/*' '*/bin/*' '*/zookeeper-*.jar' && \
-    rm -rf zookeeper-3.4.6.tar.gz
+    rm zookeeper-3.4.6.tar.gz
 
 #Install confd
 RUN mkdir -p /opt/confd/bin && \
     mkdir -p /opt/confd/conf.d && \
     mkdir -p /opt/confd/templates && \
     wget -O /opt/confd/bin/confd \
-        https://github.com/kelseyhightower/confd/releases/download/v0.7.1/confd-0.7.1-linux-amd64
+        https://github.com/kelseyhightower/confd/releases/download/v0.7.1/confd-0.7.1-linux-amd64 && \
+    chmod 755 /opt/confd/bin/confd
 
-EXPOSE 2181 2888 3888
+#Install etcdctl
+RUN mkdir -p /opt/etcd && \
+    wget -O etcd.tar.gz \
+        https://github.com/coreos/etcd/releases/download/v0.4.6/etcd-v0.4.6-linux-amd64.tar.gz && \
+    tar -C /opt/etcd \
+        --strip-components=1 \
+        -xvzf etcd.tar.gz \
+        --wildcards \
+        '*/etcdctl' && \
+    rm etcd.tar.gz
 
-ENV ZOO_LOG4J_PROP INFO,CONSOLE
+#Copy helper scripts
+COPY helper-scripts/* /usr/local/bin/
+RUN chmod 755 /usr/local/bin/*
+
+COPY confd/conf.d/* /opt/confd/conf.d/
+COPY confd/templates/* /opt/confd/templates/
+COPY supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+
+ENTRYPOINT ["/usr/local/bin/zkinit"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

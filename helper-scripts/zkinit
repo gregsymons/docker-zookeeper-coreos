@@ -1,0 +1,28 @@
+#!/usr/bin/env /bin/bash
+
+export ETCDCTL_PEERS=$ETCD_NODES
+
+etcdctl=/opt/etcd/etcdctl
+
+if [[ ! -f /var/lib/zookeeper/myid && "$ZK_INIT" == "true" ]]; then
+  echo No zookeeper id found at /var/lib/zookeeper/myid\; Generating a new one.
+  echo Using ETCDCTL_PEERS=$ETCDCTL_PEERS
+  #make sure the basic etcd structure exists.
+  $etcdctl mkdir $ETCD_PREFIX/servers 2>/dev/null || [[ $? -eq 4 ]] || exit 1
+  $etcdctl mk $ETCD_PREFIX/servers/next_id 1 2>/dev/null || [[ $? -eq 4 ]] || exit 1
+
+  while : ; do
+    myid=`$etcdctl get --consistent $ETCD_PREFIX/servers/next_id`
+    next_id=$((myid + 1))
+    $etcdctl set $ETCD_PREFIX/servers/next_id $next_id --swap-with-value $myid && break
+  done
+
+  echo $myid >/var/lib/zookeeper/myid
+  chown root:zookeeper /var/lib/zookeeper/myid
+  chmod 644 /var/lib/zookeeper/myid
+  echo zookeeper data directory initialized for id $myid
+fi
+
+if [[ -n "$@" ]]; then
+  exec $@
+fi
