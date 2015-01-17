@@ -8,3 +8,4 @@ Keys = [
   "/servers",
   "/config"
 ]
+Reload_cmd = "/usr/local/bin/zkrestart"

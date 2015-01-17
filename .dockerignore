@@ -2,5 +2,5 @@ LICENSE
 README.md
 ~*
 .git
-*.sw*
+.*.sw*
 

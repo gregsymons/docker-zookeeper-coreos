@@ -1,0 +1,20 @@
+#!/usr/bin/env /bin/bash
+
+export ETCDCTL_PEERS=$ETCD_NODES
+
+etcdctl=/opt/etcd/etcdctl
+restart_lock=$ETCD_PREFIX/restartlock
+restarting=$($etcdctl get $restart_lock)
+
+if [[ "$restarting" -eq $ZK_HOSTNAME ]]; then 
+  exit 0
+fi
+
+until $etcdctl mk $restart_lock $ZK_HOSTNAME --ttl 60 ; do
+  sleep 5
+done
+
+supervisorctl -c /etc/supervisor/supervisord.conf restart zookeeper
+
+$etcdctl rm $restart_lock
+

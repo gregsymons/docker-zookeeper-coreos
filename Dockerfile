@@ -3,12 +3,12 @@ MAINTAINER Greg Symons <gsymons@gsconsulting.biz>
 
 EXPOSE 2181 2888 3888
 
-ENV ZOO_LOG4J_PROP INFO,CONSOLE
-
-ENV CONFD_EXTRA_ARGS="" \
-    ETCD_NODES=http://127.0.0.1:4001 \
-    ETCD_PREFIX=/core-services/zookeeper \
-    ZK_INIT=true
+ENV CONFD_EXTRA_ARGS ""
+ENV ETCD_NODES http://127.0.0.1:4001
+ENV ETCD_PREFIX /core-services/zookeeper
+ENV ZK_INIT true
+ENV ZK_PEERPORT 2888
+ENV ZK_LEADERPORT 3888
 
 #Install prerequisites
 RUN apt-get update && \
@@ -17,7 +17,6 @@ RUN apt-get update && \
         supervisor \
         wget && \
     apt-get clean
-
 
 #Install zookeeper
 RUN groupadd -r zookeeper && \
@@ -55,11 +54,14 @@ RUN mkdir -p /opt/etcd && \
 
 #Copy helper scripts
 COPY helper-scripts/* /usr/local/bin/
-RUN chmod 755 /usr/local/bin/*
+RUN mkdir -p /var/run/supervisord && \
+    chmod 755 /var/run/supervisord && \
+    chmod 755 /usr/local/bin/*
 
-COPY confd/conf.d/* /opt/confd/conf.d/
-COPY confd/templates/* /opt/confd/templates/
+COPY confd/conf.d/*.toml /opt/confd/conf.d/
+COPY confd/templates/*.tmpl /opt/confd/templates/
 COPY supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 
 ENTRYPOINT ["/usr/local/bin/zkinit"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+VOLUME ["/var/lib/zookeeper"]

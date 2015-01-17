@@ -1,0 +1,20 @@
+#!/usr/bin/env /bin/bash
+
+export ETCDCTL_PEERS=$ETCD_NODES
+
+etcdctl=/opt/etcd/etcdctl
+myid=`cat /var/lib/zookeeper/myid`
+etcdpath=$ETCD_PREFIX/servers/host$myid
+
+trap "{ $etcdctl rm $etcdpath; exit 255 }" EXIT SIGTERM
+
+$etcdctl set $etcdpath >/dev/null <<EOF
+{
+  "id": "$myid",
+  "host": "$ZK_HOSTNAME",
+  "peerPort": "$ZK_PEERPORT",
+  "leaderPort": "$ZK_LEADERPORT"
+}
+EOF
+
+/opt/zookeeper/bin/zkServer.sh start-foreground /var/lib/zookeeper/zoo.cfg
