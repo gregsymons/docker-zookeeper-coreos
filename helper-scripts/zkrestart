@@ -5,6 +5,15 @@ export ETCDCTL_PEERS=$ETCD_NODES
 etcdctl=/opt/etcd/etcdctl
 restart_lock=$ETCD_PREFIX/restartlock
 restarting=$($etcdctl get $restart_lock)
+last_restart=$(cat /var/lib/zookeeper/last_restart)
+now=$(date +%s)
+elapsed=$((now - last_restart))
+
+if [[ $elapsed -lt $ZK_STABILIZATION_SECS ]]; then
+  exit 0
+fi
+
+echo $now > /var/lib/zookeeper/last_restart
 
 if [[ "$restarting" -eq $ZK_HOSTNAME ]]; then 
   exit 0
