@@ -8,8 +8,9 @@ etcdpath=$ETCD_PREFIX/servers/host$myid
 
 function _term() {
   $etcdctl rm $etcdpath
-  pkill --parent $child 
-  kill $child
+  kill $child >/dev/null 2>&1
+  wait $child
+  exit $?
 }
 
 trap _term EXIT SIGTERM
@@ -23,7 +24,15 @@ $etcdctl set $etcdpath >/dev/null <<EOF
 }
 EOF
 
-exec /opt/zookeeper/bin/zkServer.sh start-foreground /var/lib/zookeeper/zoo.cfg
+ZOOBINDIR=/opt/zookeeper/bin
+ZOOCONFDIR=/opt/zookeeper/conf
+ZOOCFGDIR=/var/lib/zookeeper
+ZOOMAIN="org.apache.zookeeper.server.quorum.QuorumPeerMain"
+
+. "$ZOOBINDIR/zkEnv.sh"
+
+"$JAVA" "-Dzookeeper.log.dir=\"${ZOO_LOG_DIR}\"" "-Dzookeeper.root.logger=$ZK_LOGLEVEL,CONSOLE" \
+    "-Dlog4j.configuration=$ZOOCONFDIR/log4j.properties" -cp "$CLASSPATH" $JVMFLAGS $ZOOMAIN "$ZOOCFG" &
 
 child=$!
 wait $child

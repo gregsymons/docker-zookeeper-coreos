@@ -9,6 +9,7 @@ ENV ETCD_PREFIX /core-services/zookeeper
 ENV ZK_INIT true
 ENV ZK_PEERPORT 2888
 ENV ZK_LEADERPORT 3888
+ENV ZK_LOGLEVEL INFO
 
 #Install prerequisites
 RUN apt-get update && \
