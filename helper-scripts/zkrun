@@ -6,7 +6,13 @@ etcdctl=/opt/etcd/etcdctl
 myid=`cat /var/lib/zookeeper/myid`
 etcdpath=$ETCD_PREFIX/servers/host$myid
 
-trap "{ $etcdctl rm $etcdpath; exit 255 }" EXIT SIGTERM
+function _term() {
+  $etcdctl rm $etcdpath
+  pkill --parent $child 
+  kill $child
+}
+
+trap _term EXIT SIGTERM
 
 $etcdctl set $etcdpath >/dev/null <<EOF
 {
@@ -17,4 +23,7 @@ $etcdctl set $etcdpath >/dev/null <<EOF
 }
 EOF
 
-/opt/zookeeper/bin/zkServer.sh start-foreground /var/lib/zookeeper/zoo.cfg
+exec /opt/zookeeper/bin/zkServer.sh start-foreground /var/lib/zookeeper/zoo.cfg
+
+child=$!
+wait $child
